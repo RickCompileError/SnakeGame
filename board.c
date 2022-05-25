@@ -7,6 +7,7 @@ Board* initBoard(){
 	b->width = BOARD_COLS;
 	addBoard(b);
 	addBoardInfo(b);
+    keypad(b->board_win,true);
 	wtimeout(b->board_win,SNAKE_MOVE_SPEED);
 	return b;
 }
@@ -24,7 +25,7 @@ void addAt(const Board *b, Coordinate c){
 }
 
 void getEmptyCoordinates(const Board *b, int *y, int *x){
-	while (mvwinch(b->board_win, *y = rand() % b->height, *x = rand() % b->width) != ' ');
+	while (mvwinch(b->board_win, *y = rand()%b->height+ 1, *x = rand()%b->width+1) != ' ');
 }
 
 chtype getInput(const Board *b){
