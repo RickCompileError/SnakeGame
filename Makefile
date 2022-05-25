@@ -4,7 +4,7 @@ CFLAGS = -Wall -O3 -g
 LDFLAGS = -lncurses
 
 bin = client
-obj = game.o client.o board.o coordinate.o snake.o
+obj = game.o client.o board.o coordinate.o snake.o apple.o
 
 all: $(bin) $(obj)
 
@@ -13,6 +13,6 @@ all: $(bin) $(obj)
 
 client: $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
-	
+
 clean:
 	rm $(obj) $(bin)
