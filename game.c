@@ -31,6 +31,8 @@ Game* initGame(){
 	addAt(g->board,next);
 	addPiece(g->snake,next);
 
+    createApple(g);
+
 	srand(time(NULL));
 
 	return g;
@@ -38,30 +40,52 @@ Game* initGame(){
 
 void processInput(Game *g){
 	chtype input = getInput(g->board);
+    switch (input){
+        case 'w':
+        case KEY_UP:
+            setDirection(g->snake,up);
+            break;
+        case 'a':
+        case KEY_LEFT:
+            setDirection(g->snake,left);
+            break;
+        case 's':
+        case KEY_DOWN:
+            setDirection(g->snake,down);
+            break;
+        case 'd':
+        case KEY_RIGHT:
+            setDirection(g->snake,right);
+            break;
+        default:
+            break;
+    }
 }
 
 void updateState(Game *g){
-	if (g->apple == NULL){
-		int y, x;
-		getEmptyCoordinates(g->board,&y,&x);
-		Coordinate new_apple = initCoordinate(y,x,'A');
-		g->apple = &new_apple;
-		addAt(g->board,*g->apple);
-	}
-
 	Coordinate next = nextHead(g->snake);
-	if (gety(next)!=gety(*g->apple) || getx(next)!=getx(*g->apple)){
-		int empty_row = gety(tail(g->snake));
-		int empty_col = getx(tail(g->snake));
-		addAt(g->board,initCoordinate(empty_row,empty_col,' '));
-		removePiece(g->snake);
-	}
+    nextMove(g,next);
+    createApple(g);
 	addAt(g->board,next);
 	addPiece(g->snake,next);
 }
 
 void redraw(const Game *g){
 	refreshBoard(g->board);	
+}
+
+bool isAppleEat(Coordinate current, Coordinate apple){
+    return gety(current)==gety(apple) && getx(current)==getx(apple);
+}
+
+void nextMove(Game *g, Coordinate next){
+    if (!isAppleEat(next,*g->apple)){
+		int empty_row = gety(tail(g->snake));
+		int empty_col = getx(tail(g->snake));
+		addAt(g->board,initCoordinate(empty_row,empty_col,' '));
+		removePiece(g->snake);
+	}
+    else deleteApple(g);
 }
 
 void startGame(Game *g){

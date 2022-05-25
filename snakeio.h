@@ -32,10 +32,10 @@ chtype getchtype(Coordinate c);
 
 /*********** Snake *************/
 typedef enum{
-	up,
-	down,
-	left,
-	right
+	up = -1,
+	down = 1,
+	left = -2,
+	right = 2
 } Direction;
 
 #define QUEUE_SIZE (size_t)4000
@@ -78,16 +78,23 @@ void refreshBoard(const Board *b);
 /*********** Game *************/
 typedef struct{
 	Board *board;
-	Snake *snake;
 	Coordinate *apple;
 	bool game_over;
+	Snake *snake;
 } Game;
 Game* initGame();
 void startGame(Game *g);
 void processInput(Game *g);
 void updateState(Game *g);
 void redraw(const Game *g);
+bool isAppleEat(Coordinate current, Coordinate apple);
+void nextMove(Game *g, Coordinate next);
 bool isOver(const Game *g);
+/******************************/
+
+/*********** Apple ************/
+void createApple(Game *g);
+void deleteApple(Game *g);
 /******************************/
 
 /************ LOG *************/
