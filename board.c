@@ -24,6 +24,10 @@ void addAt(const Board *b, Coordinate c){
 	mvwaddch(b->board_win, gety(c), getx(c), getchtype(c));	
 }
 
+chtype getAt(const Board *b, Coordinate c){
+    return mvwinch(b->board_win, gety(c), getx(c));
+}
+
 void getEmptyCoordinates(const Board *b, int *y, int *x){
 	while (mvwinch(b->board_win, *y = rand()%b->height+ 1, *x = rand()%b->width+1) != ' ');
 }

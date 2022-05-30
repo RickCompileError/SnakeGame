@@ -19,17 +19,9 @@ Game* initGame(){
 
 	fprintf(fptr,"Sucess initialize Game\n");
 
-	Coordinate next = initCoordinate(3,3,'S');
-	addAt(g->board,next);
-	addPiece(g->snake,next);
-
-	next = nextHead(g->snake);
-	addAt(g->board,next);
-	addPiece(g->snake,next);
-
-	next = nextHead(g->snake);
-	addAt(g->board,next);
-	addPiece(g->snake,next);
+    handleNextMove(g,initCoordinate(3,3,'S'));
+    handleNextMove(g,nextHead(g->snake));
+    handleNextMove(g,nextHead(g->snake));
 
     createApple(g);
 
@@ -63,29 +55,37 @@ void processInput(Game *g){
 }
 
 void updateState(Game *g){
-	Coordinate next = nextHead(g->snake);
-    nextMove(g,next);
+    handleNextMove(g,nextHead(g->snake));
     createApple(g);
-	addAt(g->board,next);
-	addPiece(g->snake,next);
 }
 
 void redraw(const Game *g){
 	refreshBoard(g->board);	
 }
 
-bool isAppleEat(Coordinate current, Coordinate apple){
-    return gety(current)==gety(apple) && getx(current)==getx(apple);
+bool isAppleEat(Coordinate current, Coordinate *apple){
+    return (apple==NULL) || (gety(current)==gety(*apple) && getx(current)==getx(*apple));
 }
 
-void nextMove(Game *g, Coordinate next){
-    if (!isAppleEat(next,*g->apple)){
-		int empty_row = gety(tail(g->snake));
-		int empty_col = getx(tail(g->snake));
-		addAt(g->board,initCoordinate(empty_row,empty_col,' '));
-		removePiece(g->snake);
-	}
-    else deleteApple(g);
+void handleNextMove(Game *g, Coordinate next){
+    if (g->apple!=NULL){
+        switch (getAt(g->board, next)){
+            case 'A':
+                deleteApple(g);
+                break;
+            case ' ':; // C language only allows statements to follow a label
+                int empty_row = gety(tail(g->snake));
+                int empty_col = getx(tail(g->snake));
+                addAt(g->board,initCoordinate(empty_row,empty_col,' '));
+                removePiece(g->snake);
+                break;
+            default:
+                g->game_over = true;
+                break;
+        }
+    }
+    addAt(g->board,next);
+	addPiece(g->snake,next);
 }
 
 void startGame(Game *g){
@@ -94,7 +94,7 @@ void startGame(Game *g){
 		updateState(g);
 		redraw(g);
 	}
-	getch();
+	// getch();
 	endwin();
 }
 

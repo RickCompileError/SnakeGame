@@ -69,6 +69,7 @@ Board* initBoard();
 void addBoard(const Board *b);
 void addBoardInfo(const Board *b);
 void addAt(const Board *b, Coordinate c);
+chtype getAt(const Board *b, Coordinate c);
 void getEmptyCoordinates(const Board *b, int *y, int *x);
 chtype getInput(const Board *b);
 void clearBoard(const Board *b);
@@ -87,8 +88,8 @@ void startGame(Game *g);
 void processInput(Game *g);
 void updateState(Game *g);
 void redraw(const Game *g);
-bool isAppleEat(Coordinate current, Coordinate apple);
-void nextMove(Game *g, Coordinate next);
+bool isAppleEat(Coordinate current, Coordinate *apple);
+void handleNextMove(Game *g, Coordinate next);
 bool isOver(const Game *g);
 /******************************/
 
