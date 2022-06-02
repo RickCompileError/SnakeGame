@@ -33,7 +33,17 @@ void getEmptyCoordinates(const Board *b, int *y, int *x){
 }
 
 chtype getInput(const Board *b){
-	return wgetch(b->board_win);
+    time_t t = milliseconds();
+    chtype input = wgetch(b->board_win);
+    chtype new_input = ERR;
+    setTimeout(b->board_win, 0);
+    // need convert to millisecond
+    while (t + SNAKE_MOVE_SPEED >= milliseconds()){
+        new_input = wgetch(b->board_win);
+    }
+    setTimeout(b->board_win, SNAKE_MOVE_SPEED);
+    if (new_input!=ERR) input = new_input;
+	return input;
 }
 
 void clearBoard(const Board *b){
@@ -42,4 +52,8 @@ void clearBoard(const Board *b){
 
 void refreshBoard(const Board *b){
 	wrefresh(b->board_win);
+}
+
+void setTimeout(WINDOW *win, int timeout){
+	wtimeout(win,timeout);
 }
