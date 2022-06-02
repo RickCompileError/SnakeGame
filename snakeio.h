@@ -6,8 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 #include <ncurses.h>
+
+#include "time.h"
 
 #define BOARD_DIM 35
 #define BOARD_ROWS BOARD_DIM
@@ -74,6 +75,7 @@ void getEmptyCoordinates(const Board *b, int *y, int *x);
 chtype getInput(const Board *b);
 void clearBoard(const Board *b);
 void refreshBoard(const Board *b);
+void setTimeout(WINDOW *win, int timeout);
 /*****************************************/
 
 /*********** Game *************/
