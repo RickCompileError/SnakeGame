@@ -14,5 +14,17 @@ all: $(bin) $(obj)
 client: $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
 
+client1: client1.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
+
+server: server.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
+
+active_server:
+	./server 1111
+
+active_client:
+	./client1 127.0.0.1 1111
+
 clean:
 	rm $(obj) $(bin)
