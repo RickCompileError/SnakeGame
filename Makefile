@@ -4,7 +4,7 @@ CFLAGS = -Wall -O3 -g
 LDFLAGS = -lncurses
 
 bin = client
-obj = game.o client.o board.o coordinate.o snake.o apple.o
+obj = game.o client.o board.o coordinate.o snake.o apple.o time.o
 
 all: $(bin) $(obj)
 
