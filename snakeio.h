@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <ncurses.h>
+#include <pthread.h>
 
 #include "time.h"
 
@@ -14,9 +15,9 @@
 #define BOARD_ROWS BOARD_DIM
 #define BOARD_COLS BOARD_DIM * 3
 
-#define SNAKE_MOVE_SPEED 200
+#define SNAKE_MOVE_SPEED 300
 
-#define MAX_USER 4
+#define MAX_USER 6
 
 /*********** Coordiante *************/
 typedef struct{
@@ -84,8 +85,10 @@ typedef struct{
 	Coordinate *apple;
 	bool game_over;
 	Snake *snake;
+    bool show;
 } Game;
-Game* initGame();
+
+Game* initGame(bool show);
 void startGame(Game *g);
 void processInput(Game *g);
 void updateState(Game *g);
@@ -100,7 +103,25 @@ void createApple(Game *g);
 void deleteApple(Game *g);
 /******************************/
 
-/************ LOG *************/
-FILE *fptr;
-/******************************/
+/*********** Package ************/
+#define BUF_SIZE 10
+typedef enum {
+    NEW_CONNECT,
+    GET_POS,
+    RET_POS,
+    NEW_DIR,
+    EAT_APPLE,
+    NEW_APPLE,
+    USER_DIE
+} Package_t;
+
+typedef struct {
+    Package_t package_t;
+    char data[BUF_SIZE];
+} Package;
+
+void handle_package();
+void prepare_package();
+/*********** Package ************/
+
 #endif

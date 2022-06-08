@@ -39,7 +39,7 @@ void initializeClient(char *serv_addr, int serv_port){
         exit(-1);
     }
 }
-    
+
 int main(int argc, char **argv){
     if (argc!=3){
         fprintf(stderr, "<Client> need ip and port!\n");

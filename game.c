@@ -1,23 +1,20 @@
 #include "snakeio.h"
 
-Game* initGame(){
+Game* initGame(bool show){
 	initscr();
-	noecho();
-	curs_set(0);
-
 	box(stdscr,0,0);
 	mvprintw(0,0,"Height: %d, Width: %d",LINES,COLS);
-	refresh();
-
-	fprintf(fptr,"Sucess initialize stdscr window.\n");
+    if (show){
+        noecho();
+        curs_set(0);
+        refresh();
+    }
 
 	Game *g = malloc(sizeof(Game));
-	g->board = initBoard();
+	g->board = initBoard(show);
 	g->snake = initSnake(right);
 	g->apple = NULL;
 	g->game_over = false;
-
-	fprintf(fptr,"Sucess initialize Game\n");
 
     handleNextMove(g,initCoordinate(3,3,'S'));
     handleNextMove(g,nextHead(g->snake));
@@ -60,7 +57,7 @@ void updateState(Game *g){
 }
 
 void redraw(const Game *g){
-	refreshBoard(g->board);	
+	if (g->show) refreshBoard(g->board);	
 }
 
 bool isAppleEat(Coordinate current, Coordinate *apple){

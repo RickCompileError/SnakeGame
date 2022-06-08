@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include "snakeio.h"
+
 /******* file descriptor *******/
 fd_set master_fds;
 fd_set read_fds;
@@ -27,6 +29,14 @@ int yes=1;
 char buf[256]; 
 int nbytes;
 int i, rv;
+
+/******* game relative *******/
+typedef struct{
+    int user_fd;
+    int user_id;
+} User;
+User users[MAX_USER];
+int user_num;
 
 void *get_in_addr(struct sockaddr *sa)
 {
