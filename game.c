@@ -1,24 +1,22 @@
 #include "snakeio.h"
 
-Game* initGame(bool show){
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+Game* initGame(bool server){
 	initscr();
 	box(stdscr,0,0);
 	mvprintw(0,0,"Height: %d, Width: %d",LINES,COLS);
-    if (show){
+    if (server){
         noecho();
         curs_set(0);
         refresh();
     }
 
 	Game *g = malloc(sizeof(Game));
-	g->board = initBoard(show);
-	g->snake = initSnake(right);
+	g->board = initBoard(server);
 	g->apple = NULL;
 	g->game_over = false;
-
-    handleNextMove(g,initCoordinate(3,3,'S'));
-    handleNextMove(g,nextHead(g->snake));
-    handleNextMove(g,nextHead(g->snake));
+    g->server = server;
 
     createApple(g);
 
@@ -29,6 +27,7 @@ Game* initGame(bool show){
 
 void processInput(Game *g){
 	chtype input = getInput(g->board);
+    if (g->server) return;
     switch (input){
         case 'w':
         case KEY_UP:
@@ -52,12 +51,19 @@ void processInput(Game *g){
 }
 
 void updateState(Game *g){
-    handleNextMove(g,nextHead(g->snake));
+    pthread_mutex_lock(&mutex);
+    for (int i=0;i<MAX_USER;i++){
+        if (g->snakes[i]!=NULL){
+            g->snake = g->snakes[i];
+            handleNextMove(g,nextHead(g->snakes[i]));
+        }
+    }
     createApple(g);
+    pthread_mutex_unlock(&mutex);
 }
 
 void redraw(const Game *g){
-	if (g->show) refreshBoard(g->board);	
+	if (g->server) refreshBoard(g->board);	
 }
 
 bool isAppleEat(Coordinate current, Coordinate *apple){
@@ -65,7 +71,12 @@ bool isAppleEat(Coordinate current, Coordinate *apple){
 }
 
 void handleNextMove(Game *g, Coordinate next){
-    if (g->apple!=NULL){
+    if (g->server) {
+        int empty_row = gety(tail(g->snake));
+        int empty_col = getx(tail(g->snake));
+        addAt(g->board,initCoordinate(empty_row,empty_col,' '));
+        removePiece(g->snake);
+    } else if (g->apple!=NULL){
         switch (getAt(g->board, next)){
             case 'A':
                 deleteApple(g);
@@ -85,8 +96,33 @@ void handleNextMove(Game *g, Coordinate next){
 	addPiece(g->snake,next);
 }
 
+void addSnake(Game *g, int id){
+    g->snakes[id] = initSnake(down);
+    Coordinate pos = getStartPosition(g->board);
+    g->snake = g->snakes[id];
+    handleNextMove(g, pos);
+    handleNextMove(g, nextHead(g->snake));
+    handleNextMove(g, nextHead(g->snake));
+}
+
+void removeSnake(Game *g, int id){
+    g->snake = g->snakes[id];
+    while (size(g->snake)>0){
+        int empty_row = gety(tail(g->snake));
+        int empty_col = getx(tail(g->snake));
+        addAt(g->board,initCoordinate(empty_row,empty_col,' '));
+        removePiece(g->snake);
+    }
+    free(g->snake);
+    g->snakes[id] = NULL;
+}
+
+void setUserDir(Game *g, int id, Direction dir){
+    setDirection(g->snakes[id], dir);
+}
+
 void startGame(Game *g){
-	while (!isOver(g)){
+	while (g->server || !isOver(g)){
 		processInput(g);
 		updateState(g);
 		redraw(g);

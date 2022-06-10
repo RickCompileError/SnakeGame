@@ -1,13 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
 #include "snakeio.h"
 
 /******* file descriptor *******/
@@ -31,12 +21,10 @@ int nbytes;
 int i, rv;
 
 /******* game relative *******/
-typedef struct{
-    int user_fd;
-    int user_id;
-} User;
-User users[MAX_USER];
+int user_to_fd[MAX_USER];
+int fd_to_user[MAX_USER];
 int user_num;
+Game *game;
 
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -83,25 +71,48 @@ void initializeServer(){
     }
     FD_SET(listener, &master_fds);
     fdmax = listener; 
+    memset(user_to_fd,0,sizeof(user_to_fd));
+    memset(fd_to_user,0,sizeof(fd_to_user));
+    user_num = 0;
+    game = initGame(false);
 }
 
-void handleConnection(){
-    addrlen = sizeof(remoteaddr);
-    newfd = accept(listener,(struct sockaddr *)&remoteaddr,&addrlen);
-    if (newfd == -1) fprintf(stderr, "accept error\n");
-    else {
-        FD_SET(newfd, &master_fds); 
-        if (newfd > fdmax) fdmax = newfd; 
-        fprintf(stderr, "selectserver: new connection from %s on socket %d\n",
-            inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET_ADDRSTRLEN), newfd);
+void broadcast(Package *package){
+    for(i = 0; i <= fdmax; i++) {
+        if (FD_ISSET(i, &master_fds) && (i != listener)) {
+            if (send_package(i, package) < 0) {
+                fprintf(stderr, "broadcast error\n");
+            }
+        }
     }
 }
 
-void broadcast(int sender_fd_num){
-    for(i = 0; i <= fdmax; i++) {
-        if (FD_ISSET(i, &master_fds) && (i != listener) && (i != sender_fd_num)) {
-            if (send(i, buf, nbytes, 0) == -1) {
-                fprintf(stderr, "send error\n");
+void handleNewSnake(int fd){
+    Package package;
+    memset(&package, 0, sizeof(package));
+    package.kind = NEW_CONNECT;
+    for (i=0;i<BOARD_ROWS;i++){
+        getStr(game->board, i, 0, package.gi.map);
+        package.gi.y = i;
+        package.gi.x = 0;
+        if (send_package(fd, &package) < 0) {
+            fprintf(stderr, "send map error\n");
+        }
+    }
+    memset(&package, 0, sizeof(package));
+    package.kind = SNAKE;
+    addSnake(game, fd_to_user[fd]);
+    for (i=0;i<MAX_USER;i++){
+        if (user_to_fd[i]){
+            Coordinate coor = head(game->snakes[i]);
+            package.gi.y = gety(coor);
+            package.gi.x = getx(coor);
+            package.gi.dir = getDirection(game->snakes[i]);
+            package.gi.uid = i;
+            if (user_to_fd[i]==fd){
+                broadcast(&package);
+            } else if (send_package(fd, &package) < 0){
+                fprintf(stderr, "send snake error\n");
             }
         }
     }
@@ -113,18 +124,68 @@ void closeConnection(int sender_fd_num){
     } else {
         fprintf(stderr, "recv error");
     }
+    user_num--;
     close(sender_fd_num); 
     FD_CLR(sender_fd_num, &master_fds); 
 }
 
-void handleData(int sender_fd_num){
-    if ((nbytes = recv(i, buf, sizeof(buf), 0)) <= 0)
-        closeConnection(sender_fd_num);
-    else
-        broadcast(sender_fd_num);
+void handleConnection(){
+    addrlen = sizeof(remoteaddr);
+    newfd = accept(listener,(struct sockaddr *)&remoteaddr,&addrlen);
+    if (newfd == -1) fprintf(stderr, "accept error\n");
+    user_num++;
+    if (user_num > MAX_USER) {
+        closeConnection(newfd);   
+    } else {
+        FD_SET(newfd, &master_fds); 
+        if (newfd > fdmax) fdmax = newfd; 
+        fprintf(stderr, "selectserver: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET_ADDRSTRLEN), newfd);
+        for (i=0;i<MAX_USER;i++){
+            if (user_to_fd[i]==0){
+                user_to_fd[i] = newfd;
+                fd_to_user[newfd] = i;
+            }
+        }
+        handleNewSnake(newfd);
+    }
 }
 
-void selectLoop(){
+void handlePackage(Package package){
+    switch(package.kind){
+        case NEW_DIR:
+            setUserDir(game, package.gi.uid, package.gi.dir);
+            broadcast(&package);
+            break;
+        case EAT_APPLE:
+            deleteApple(game);
+            createApple(game);
+            Package package;
+            package.kind = NEW_APPLE;
+            package.gi.y = getAppleY(game->apple);
+            package.gi.x = getAppleX(game->apple);
+            broadcast(&package);
+            break;
+        case USER_DIE:
+            removeSnake(game, package.gi.uid);
+            fd_to_user[user_to_fd[package.gi.uid]] = 0;
+            user_to_fd[package.gi.uid] = 0;
+            broadcast(&package);
+            break;
+        default:
+            break;
+    }
+}
+
+void handleData(int sender_fd_num){
+    Package package;
+    memset(&package,0,sizeof(package));
+    if ((nbytes = recv_package(sender_fd_num, &package)) <= 0)
+        closeConnection(sender_fd_num);
+    else
+        handlePackage(package);
+}
+
+void *selectLoop(){
     while (1) {
         read_fds = master_fds;
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) { // block
@@ -151,7 +212,10 @@ int main(int argc, char **argv)
 
     initializeServer();
 
-    selectLoop();
+    pthread_t t;
+    pthread_create(&t, NULL, selectLoop, NULL);
+    startGame(game); 
+    pthread_join(t, NULL);
 
     return 0;
 }

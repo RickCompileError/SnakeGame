@@ -17,3 +17,11 @@ void deleteApple(Game *g){
     free(g->apple);
     g->apple = NULL;
 }
+
+int getAppleY(Coordinate *apple){
+    return gety(*apple);
+}
+
+int getAppleX(Coordinate *apple){
+    return getx(*apple);
+}

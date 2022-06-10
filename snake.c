@@ -22,7 +22,7 @@ void addPiece(Snake *s, Coordinate c){
 }
 
 void removePiece(Snake *s){
-	if (s->rear==s->front){
+	if (size(s)==0){
 		fprintf(stderr,"Queue can't empty!!!\n");
 		exit(-1);
 	}
