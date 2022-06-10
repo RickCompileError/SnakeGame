@@ -1,1 +1,1 @@
-./client 2> log.txt
+./start 2> log.txt

@@ -100,7 +100,4 @@ void createApple(Game *g);
 void deleteApple(Game *g);
 /******************************/
 
-/************ LOG *************/
-FILE *fptr;
-/******************************/
 #endif

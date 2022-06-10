@@ -9,15 +9,11 @@ Game* initGame(){
 	mvprintw(0,0,"Height: %d, Width: %d",LINES,COLS);
 	refresh();
 
-	fprintf(fptr,"Sucess initialize stdscr window.\n");
-
 	Game *g = malloc(sizeof(Game));
 	g->board = initBoard();
 	g->snake = initSnake(right);
 	g->apple = NULL;
 	g->game_over = false;
-
-	fprintf(fptr,"Sucess initialize Game\n");
 
     handleNextMove(g,initCoordinate(3,3,'S'));
     handleNextMove(g,nextHead(g->snake));
