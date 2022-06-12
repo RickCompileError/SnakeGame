@@ -58,7 +58,7 @@ Coordinate getStartPosition(const Board *b){
                 if (getAtYX(b,i,j)!=' ') legal = false;
             }
         }
-        if (legal) return initCoordinate(y, x, 'S');
+        if (legal) return initCoordinate(y, x, ' ');
     }
 }
 

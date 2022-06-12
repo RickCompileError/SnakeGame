@@ -13,6 +13,13 @@ void createApple(Game *g){
      }
 }
 
+void addApple(Game *g, Coordinate new_apple){
+    if (g->apple == NULL){
+        g->apple = &new_apple;
+        addAt(g->board, new_apple);
+    }
+}
+
 void deleteApple(Game *g){
     free(g->apple);
     g->apple = NULL;

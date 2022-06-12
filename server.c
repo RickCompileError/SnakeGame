@@ -22,7 +22,7 @@ int i, rv;
 
 /******* game relative *******/
 int user_to_fd[MAX_USER];
-int fd_to_user[MAX_USER];
+int fd_to_user[MAX_FD];
 int user_num;
 Game *game;
 
@@ -71,10 +71,10 @@ void initializeServer(){
     }
     FD_SET(listener, &master_fds);
     fdmax = listener; 
-    memset(user_to_fd,0,sizeof(user_to_fd));
-    memset(fd_to_user,0,sizeof(fd_to_user));
+    for (i=0;i<MAX_USER;i++) user_to_fd[i] = -1;
+    for (i=0;i<MAX_FD;i++) fd_to_user[i] = -1;
     user_num = 0;
-    game = initGame(false);
+    game = initGame(SERVER);
 }
 
 void broadcast(Package *package){
@@ -87,34 +87,40 @@ void broadcast(Package *package){
     }
 }
 
-void handleNewSnake(int fd){
+void handleNewSnake(int newfd){
+    serverAddSnake(game, fd_to_user[newfd]);
     Package package;
     memset(&package, 0, sizeof(package));
-    package.kind = NEW_CONNECT;
+    package.kind = SET_MAP;
     for (i=0;i<BOARD_ROWS;i++){
         getStr(game->board, i, 0, package.gi.map);
         package.gi.y = i;
         package.gi.x = 0;
-        if (send_package(fd, &package) < 0) {
+        if (send_package(newfd, &package) < 0) {
             fprintf(stderr, "send map error\n");
         }
     }
     memset(&package, 0, sizeof(package));
-    package.kind = SNAKE;
-    addSnake(game, fd_to_user[fd]);
+    package.kind = NEW_SNAKE;
     for (i=0;i<MAX_USER;i++){
-        if (user_to_fd[i]){
-            Coordinate coor = head(game->snakes[i]);
+        if (user_to_fd[i]>=0){
+            Coordinate coor = tail(game->snakes[i]);
             package.gi.y = gety(coor);
             package.gi.x = getx(coor);
             package.gi.dir = getDirection(game->snakes[i]);
             package.gi.uid = i;
-            if (user_to_fd[i]==fd){
+            if (user_to_fd[i]==newfd){
                 broadcast(&package);
-            } else if (send_package(fd, &package) < 0){
+            } else if (send_package(newfd, &package) < 0){
                 fprintf(stderr, "send snake error\n");
             }
         }
+    }
+    memset(&package, 0, sizeof(package));
+    package.kind = SET_ID;
+    package.gi.uid = fd_to_user[newfd];
+    if (send_package(newfd, &package) < 0){
+        fprintf(stderr, "send send id error\n");
     }
 }
 
@@ -124,6 +130,14 @@ void closeConnection(int sender_fd_num){
     } else {
         fprintf(stderr, "recv error");
     }
+    removeSnake(game, fd_to_user[sender_fd_num]);
+    Package package;
+    memset(&package, 0, sizeof(package));
+    package.kind = USER_DIE;
+    package.gi.uid = fd_to_user[sender_fd_num];
+    broadcast(&package);
+    user_to_fd[fd_to_user[sender_fd_num]] = -1;
+    fd_to_user[sender_fd_num] = -1;
     user_num--;
     close(sender_fd_num); 
     FD_CLR(sender_fd_num, &master_fds); 
@@ -141,7 +155,7 @@ void handleConnection(){
         if (newfd > fdmax) fdmax = newfd; 
         fprintf(stderr, "selectserver: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET_ADDRSTRLEN), newfd);
         for (i=0;i<MAX_USER;i++){
-            if (user_to_fd[i]==0){
+            if (user_to_fd[i] == -1){
                 user_to_fd[i] = newfd;
                 fd_to_user[newfd] = i;
             }
@@ -157,9 +171,12 @@ void handlePackage(Package package){
             broadcast(&package);
             break;
         case EAT_APPLE:
+            addAt(game->board, nextHead(game->snakes[package.gi.uid]));
+            addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
+            broadcast(&package);
             deleteApple(game);
             createApple(game);
-            Package package;
+            memset(&package, 0, sizeof(package));
             package.kind = NEW_APPLE;
             package.gi.y = getAppleY(game->apple);
             package.gi.x = getAppleX(game->apple);
@@ -167,8 +184,8 @@ void handlePackage(Package package){
             break;
         case USER_DIE:
             removeSnake(game, package.gi.uid);
-            fd_to_user[user_to_fd[package.gi.uid]] = 0;
-            user_to_fd[package.gi.uid] = 0;
+            fd_to_user[user_to_fd[package.gi.uid]] = -1;
+            user_to_fd[package.gi.uid] = -1;
             broadcast(&package);
             break;
         default:
@@ -185,7 +202,7 @@ void handleData(int sender_fd_num){
         handlePackage(package);
 }
 
-void *selectLoop(){
+static void *selectLoop(){
     while (1) {
         read_fds = master_fds;
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) { // block
@@ -199,6 +216,7 @@ void *selectLoop(){
             }
         }
     } 
+    return NULL;
 }
 
 int main(int argc, char **argv)

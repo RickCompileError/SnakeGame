@@ -23,6 +23,7 @@
 #define SNAKE_MOVE_SPEED 300
 
 #define MAX_USER 6
+#define MAX_FD 100
 
 /*********** Coordiante *************/
 typedef struct{
@@ -49,12 +50,13 @@ typedef enum{
 typedef struct{
 	Direction direction;
 	Coordinate *snake_piece;
+    chtype skin;
 	int front; // snake head
 	int rear; // snake tail
 	int sz;
 } Snake;
 
-Snake* initSnake();
+Snake* initSnake(Direction dir);
 void addPiece(Snake *s, Coordinate c);
 void removePiece(Snake *s);
 Direction getDirection(Snake *s);
@@ -89,45 +91,10 @@ void setTimeout(WINDOW *win, int timeout);
 /*****************************************/
 
 /*********** Game *************/
-typedef struct{
-	Board *board;
-	Coordinate *apple;
-	bool game_over;
-	Snake *snake;
-    Snake *snakes[MAX_USER];
-    bool server;
-} Game;
-
-Game* initGame(bool server);
-void startGame(Game *g);
-void processInput(Game *g);
-void updateState(Game *g);
-void redraw(const Game *g);
-bool isAppleEat(Coordinate current, Coordinate *apple);
-void handleNextMove(Game *g, Coordinate next);
-void addSnake(Game *g, int id);
-void removeSnake(Game *g, int id);
-void setUserDir(Game *g, int id, Direction dir);
-bool isOver(const Game *g);
-/******************************/
-
-/*********** Apple ************/
-void createApple(Game *g);
-void deleteApple(Game *g);
-int getAppleY(Coordinate *apple);
-int getAppleX(Coordinate *apple);
-/******************************/
-
-/*********** Package ************/
-#define BUF_SIZE 110
-typedef enum {
-    NEW_CONNECT,
-    SNAKE,
-    NEW_DIR,
-    EAT_APPLE,
-    NEW_APPLE,
-    USER_DIE
-} Package_t;
+typedef enum{
+    SERVER,
+    CLIENT
+} Type;
 
 typedef struct {
     int8_t uid;
@@ -137,6 +104,53 @@ typedef struct {
     char map[BOARD_COLS];
 } GameInfo;
 
+typedef struct{
+	Board *board;
+	Coordinate *apple;
+	bool game_over;
+	Snake *snake;
+    Snake *snakes[MAX_USER];
+    Type type;
+    int id;
+    int fd;
+} Game;
+
+Game* initGame(Type type);
+void startGame(Game *g);
+void processInput(Game *g);
+void updateState(Game *g);
+void redraw(const Game *g);
+bool isAppleEat(Coordinate current, Coordinate *apple);
+void handleNextMove(Game *g, Coordinate next, bool self);
+void serverAddSnake(Game *g, int id);
+void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, chtype ch);
+void clientAddSnake(Game *g, GameInfo gi);
+void removeSnake(Game *g, int id);
+void setUserDir(Game *g, int id, Direction dir);
+bool isOver(const Game *g);
+/******************************/
+
+/*********** Apple ************/
+void createApple(Game *g);
+void addApple(Game *g, Coordinate new_apple);
+void deleteApple(Game *g);
+void setApple(Coordinate *apple, int y, int x);
+int getAppleY(Coordinate *apple);
+int getAppleX(Coordinate *apple);
+/******************************/
+
+/*********** Package ************/
+#define BUF_SIZE 110
+typedef enum {
+    SET_ID,
+    SET_MAP,
+    NEW_SNAKE,
+    NEW_DIR,
+    EAT_APPLE,
+    NEW_APPLE,
+    USER_DIE
+} Package_t;
+
 typedef struct {
     Package_t kind;
     GameInfo gi;
@@ -144,6 +158,9 @@ typedef struct {
 
 int recv_package();
 int send_package();
+void sendDirection(int fd, int8_t uid, Direction dir);
+void sendEatApple(int fd, int8_t uid);
+void sendDie(int fd, int8_t uid);
 /*********** Package ************/
 
 #endif
