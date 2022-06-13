@@ -26,4 +26,4 @@ active_client:
 	./client 127.0.0.1 1111 2> clilog.txt
 
 clean:
-	rm $(obj) $(bin) client.o server.o
+	rm $(obj) $(bin) client.o server.o *.txt
