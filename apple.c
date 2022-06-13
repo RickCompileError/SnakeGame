@@ -9,7 +9,7 @@ void createApple(Game *g){
          g->apple->x = x;
          g->apple->ch = 'A';
          addAt(g->board,*g->apple);
-         fprintf(stderr,"Apple generate at Y: %d X: %d\n",gety(*g->apple),getx(*g->apple));
+         fprintf(stderr,"[Apple] Apple generate at Y: %d X: %d\n",gety(*g->apple),getx(*g->apple));
      }
 }
 

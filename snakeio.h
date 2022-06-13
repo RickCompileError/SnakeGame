@@ -142,7 +142,7 @@ int getAppleX(Coordinate *apple);
 /*********** Package ************/
 #define BUF_SIZE 110
 typedef enum {
-    SET_ID,
+    SET_ID=1,
     SET_MAP,
     NEW_SNAKE,
     NEW_DIR,

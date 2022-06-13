@@ -7,6 +7,7 @@ Game *game;
 int id;
 
 void handlePackage(Package package){
+    fprintf(stderr,"[Client] Start handle package kind %d\n", package.kind);
     switch(package.kind){
         case SET_ID:
             game->id = package.gi.uid;
@@ -15,17 +16,17 @@ void handlePackage(Package package){
         case SET_MAP:
             setStr(game->board, package.gi.y, package.gi.x, package.gi.map);
             break;
-        case EAT_APPLE:
-            if (game->id!=package.gi.uid){
-                addAt(game->board, nextHead(game->snakes[package.gi.uid]));
-                addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
-            }
-            break;
         case NEW_SNAKE:
             clientAddSnake(game, package.gi);
             break;
         case NEW_DIR:
             setUserDir(game, package.gi.uid, package.gi.dir);
+            break;
+        case EAT_APPLE:
+            if (game->id!=package.gi.uid){
+                addAt(game->board, nextHead(game->snakes[package.gi.uid]));
+                addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
+            }
             break;
         case NEW_APPLE:
             deleteApple(game);
@@ -41,6 +42,7 @@ void handlePackage(Package package){
         default:
             break;
     }
+    fprintf(stderr,"[Client] Successfully handle package kind %d\n", package.kind);
 }
 
 static void *handle_data(){
@@ -48,7 +50,7 @@ static void *handle_data(){
         Package package;
         memset(&package,0,sizeof(package));
         if (recv_package(sock,&package)<0){
-            puts("recv failed");
+            fprintf(stderr, "[Client] Receive error\n");
             break;
         }
         handlePackage(package);
@@ -58,13 +60,13 @@ static void *handle_data(){
 
 void initializeClient(char *serv_addr, int serv_port){
     sock = socket(AF_INET,SOCK_STREAM,0);
-    if(sock==-1) fprintf(stderr, "Couldn't create socket\n");
-    fprintf(stderr, "Client Socket created\n");
+    if(sock==-1) fprintf(stderr, "[Client] Couldn't create socket\n");
+    fprintf(stderr, "[Client] Client Socket created\n");
     server.sin_addr.s_addr = inet_addr(serv_addr);
     server.sin_family = AF_INET;
     server.sin_port = htons(serv_port);
     if(connect(sock,(struct sockaddr *)&server,sizeof(server))<0){
-        fprintf(stderr, "connect failed. Error\n");
+        fprintf(stderr, "[Client] Connect failed. Error\n");
         exit(-1);
     }
     game = initGame(CLIENT);
@@ -74,14 +76,14 @@ void initializeClient(char *serv_addr, int serv_port){
 
 int main(int argc, char **argv){
     if (argc!=3){
-        fprintf(stderr, "<Client> need ip and port!\n");
+        fprintf(stderr, "[Client] need ip and port!\n");
         exit(-1);
     }
     char *serv_addr = argv[1];
     int serv_port = atoi(argv[2]);
 
     initializeClient(serv_addr, serv_port);
-    fprintf(stderr, "Client Connect successfully\n");
+    fprintf(stderr, "[Client] Client Connect successfully\n");
 
     pthread_t t;
     pthread_create(&t, NULL, handle_data, NULL);

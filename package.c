@@ -3,31 +3,36 @@
 int recv_package(int fd, Package *package){
     char buf[BUF_SIZE];
     int nbytes;
-    if ((nbytes = recv(fd, buf, sizeof(BUF_SIZE), 0)) <= 0) return nbytes;
+    memset(buf,0,sizeof(buf));
+    if ((nbytes = recv(fd, buf, BUF_SIZE, 0)) <= 0) return nbytes;
     else {
+        fprintf(stderr, "[Package] Received Data: ");
+        for (int i=0;i<BUF_SIZE;i++) fprintf(stderr,"%d",buf[i]);
+        fprintf(stderr,"\n");
         package->kind = buf[0];
         switch (package->kind){
             case SET_ID:
                 package->gi.uid = buf[1];
                 break;
             case SET_MAP:
-                package->gi.y = (((int16_t)buf[1])<<8) | (int16_t)buf[2];
-                package->gi.x = (((int16_t)buf[3])<<8) | (int16_t)buf[4];
-                memcpy(package->gi.map, buf+5, BOARD_COLS);
+                package->gi.y = buf[1];
+                package->gi.x = buf[2];
+                memcpy(package->gi.map, buf+3, BOARD_COLS);
+                fprintf(stderr,"[Package] Received Map: %s\n",package->gi.map);
                 break;
             case NEW_SNAKE:
-                package->gi.y = (((int16_t)buf[1])<<8) | (int16_t)buf[2];
-                package->gi.x = (((int16_t)buf[3])<<8) | (int16_t)buf[4];
-                package->gi.dir = buf[5];
-                package->gi.uid = buf[6];
+                package->gi.y = buf[1];
+                package->gi.x = buf[2];
+                package->gi.dir = buf[3];
+                package->gi.uid = buf[4];
                 break;
             case NEW_DIR:
                 package->gi.dir = buf[1];
                 package->gi.uid = buf[2];
                 break;
             case NEW_APPLE:
-                package->gi.y = (((int16_t)buf[1])<<8) | (int16_t)buf[2];
-                package->gi.x = (((int16_t)buf[3])<<8) | (int16_t)buf[4];
+                package->gi.y = buf[1];
+                package->gi.x = buf[2];
                 break;
             case EAT_APPLE:
             case USER_DIE:
@@ -42,40 +47,39 @@ int recv_package(int fd, Package *package){
 
 int send_package(int fd, Package *package){
     char buf[BUF_SIZE];
+    memset(buf, 0, sizeof(buf));
     buf[0] = package->kind;
     switch(package->kind){
         case SET_ID:
             buf[1] = package->gi.uid;
         case SET_MAP:
-            buf[1] = package->gi.y>>8;
-            buf[2] = package->gi.y;
-            buf[3] = package->gi.x>>8;
-            buf[4] = package->gi.x;
-            memcpy(buf+5, package->gi.map, BOARD_COLS);
+            buf[1] = package->gi.y;
+            buf[2] = package->gi.x;
+            memcpy(buf+3, package->gi.map, BOARD_COLS);
+            fprintf(stderr,"[Package] Send Map: %s\n",buf+5);
             break;
         case NEW_SNAKE:
-            buf[1] = package->gi.y>>8;
-            buf[2] = package->gi.y;
-            buf[3] = package->gi.x>>8;
-            buf[4] = package->gi.x;
-            buf[5] = package->gi.dir;
-            buf[6] = package->gi.uid;
+            buf[1] = package->gi.y;
+            buf[2] = package->gi.x;
+            buf[3] = package->gi.dir;
+            buf[4] = package->gi.uid;
             break;
         case NEW_DIR:
             buf[1] = package->gi.dir;
             buf[2] = package->gi.uid;
             break;
         case NEW_APPLE:
-            buf[1] = package->gi.y>>8;
-            buf[2] = package->gi.y;
-            buf[3] = package->gi.x>>8;
-            buf[4] = package->gi.x;
+            buf[1] = package->gi.y;
+            buf[2] = package->gi.x;
             break;
         case EAT_APPLE:
         case USER_DIE:
             buf[1] = package->gi.uid;
             break;
     }
+    fprintf(stderr, "[Package] Send data: "); 
+    for (int i=0;i<BUF_SIZE;i++) fprintf(stderr,"%d",buf[i]);
+    fprintf(stderr, "\n");
     return send(fd, buf, BUF_SIZE, 0);
 }
 
@@ -86,7 +90,8 @@ void sendDirection(int fd, int8_t uid, Direction dir){
     package.gi.uid = uid;
     package.gi.dir = dir;
     if (send_package(fd, &package) < 0){
-        fprintf(stderr, "broadcast error\n");
+        fprintf(stderr, "Send direction error\n");
+        exit(-1);
     }
 }
 
@@ -96,7 +101,8 @@ void sendEatApple(int fd, int8_t uid){
     package.kind = EAT_APPLE;
     package.gi.uid = uid;
     if (send_package(fd, &package) < 0){
-        fprintf(stderr, "broadcast error\n");
+        fprintf(stderr, "Send eat apple error\n");
+        exit(-1);
     }
 }
 
@@ -106,6 +112,7 @@ void sendDie(int fd, int8_t uid){
     package.kind = USER_DIE;
     package.gi.uid = uid;
     if (send_package(fd, &package) < 0){
-        fprintf(stderr, "broadcast error\n");
+        fprintf(stderr, "send user die error\n");
+        exit(-1);
     }
 }

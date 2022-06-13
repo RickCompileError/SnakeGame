@@ -32,12 +32,14 @@ chtype getAtYX(const Board *b, int y, int x){
     return mvwinch(b->board_win, y, x);
 }
 
+// BOARD_COLS-2 because minus border
 void getStr(const Board *b, int y, int x, char *str){
-    mvwinnstr(b->board_win, y, x, str, BOARD_COLS);
+    mvwinnstr(b->board_win, y, x, str, BOARD_COLS-2);
 }
 
+// BOARD_COLS-2 because minus border
 void setStr(const Board *b, int y, int x, char *str){
-    mvwaddnstr(b->board_win, y, x, str, BOARD_COLS);
+    mvwaddnstr(b->board_win, y, x, str, BOARD_COLS-2);
 }
 
 void getEmptyCoordinates(const Board *b, int *y, int *x){

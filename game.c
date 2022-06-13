@@ -16,11 +16,15 @@ Game* initGame(Type type){
 	g->board = initBoard();
 	g->apple = NULL;
 	g->game_over = false;
+    g->snake = NULL;
+    for (int i=0;i<MAX_USER;i++) g->snakes[i] = NULL;
     g->type = type;
     g->id = g->fd = -1;
-    createApple(g);
+    if (g->type==SERVER) createApple(g);
 
 	srand(time(NULL));
+
+    fprintf(stderr, "[Game] Create Game Success\n");
 
 	return g;
 }
@@ -104,13 +108,17 @@ void handleNextMove(Game *g, Coordinate next, bool self){
 }
 
 void serverAddSnake(Game *g, int id){
-    g->snakes[id] = initSnake(down);
+    g->snakes[id] = initSnake(up);
     Coordinate pos = getStartPosition(g->board);
     pos.ch = 48+id;
     g->snake = g->snakes[id];
-    handleNextMove(g, pos, false);
-    handleNextMove(g, nextHead(g->snake), false);
-    handleNextMove(g, nextHead(g->snake), false);
+    addAt(g->board, pos);
+    addPiece(g->snake, pos);
+    addAt(g->board, nextHead(g->snake));
+    addPiece(g->snake, nextHead(g->snake));
+    addAt(g->board, nextHead(g->snake));
+    addPiece(g->snake, nextHead(g->snake));
+    redraw(g);
 }
 
 void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, chtype ch){
@@ -120,14 +128,14 @@ void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, c
     if (!(cury==prevy && curx+1==prevx) && getAtYX(board, cury, curx+1)==ch) nexty = cury, nextx = curx+1; 
     if (!(cury==prevy && curx-1==prevx) && getAtYX(board, cury, curx-1)==ch) nexty = cury, nextx = curx-1; 
     if (nexty==-1 && nextx==-1) return;
-    addAt(board, initCoordinate(nexty, nextx, ch));
+//   addAt(board, initCoordinate(nexty, nextx, ch));
     addPiece(snake, initCoordinate(nexty, nextx, ch));
     dfs(snake, board, cury, curx, nexty, nextx, ch);
 }
 
 void clientAddSnake(Game *g, GameInfo gi){
     g->snakes[gi.uid] = initSnake(gi.dir);
-    addAt(g->board, initCoordinate(gi.y, gi.x, 48+gi.uid));
+//    addAt(g->board, initCoordinate(gi.y, gi.x, 48+gi.uid));
     addPiece(g->snakes[gi.uid], initCoordinate(gi.y, gi.x, 48+gi.uid));
     dfs(g->snakes[gi.uid], g->board, -1, -1, gi.y, gi.x, 48+gi.uid);
 }
@@ -148,11 +156,14 @@ void setUserDir(Game *g, int id, Direction dir){
 }
 
 void startGame(Game *g){
+    while (g->type==CLIENT && g->id==-1) continue;
+    fprintf(stderr,"[Game] Start game\n");
 	while (g->type==SERVER || !isOver(g)){
 		processInput(g);
 		updateState(g);
 		redraw(g);
 	}
+    fprintf(stderr,"[Game] End game\n");
 	// getch();
 	endwin();
 }

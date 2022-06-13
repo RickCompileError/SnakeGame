@@ -13,7 +13,7 @@ Snake* initSnake(Direction dir){
 void addPiece(Snake *s, Coordinate c){
 	s->front = (s->front+1)%QUEUE_SIZE;
 	if (s->front+1==s->rear){
-		fprintf(stderr,"Queue is full!!!\n");
+		fprintf(stderr,"[Snake] Queue is full!!!\n");
 		exit(-1);
 	}
 	s->snake_piece[s->front] = c;
@@ -23,7 +23,7 @@ void addPiece(Snake *s, Coordinate c){
 
 void removePiece(Snake *s){
 	if (size(s)==0){
-		fprintf(stderr,"Queue can't empty!!!\n");
+		fprintf(stderr,"[Snake] Queue can't empty!!!\n");
 		exit(-1);
 	}
 	s->rear = (s->rear+1)%QUEUE_SIZE;

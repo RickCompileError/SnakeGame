@@ -61,7 +61,7 @@ void initializeServer(){
     }
     // check if socket and addr binding success
     if (p == NULL) {
-        fprintf(stderr, "selectserver: failed to bind\n");
+        fprintf(stderr, "[Server] selectserver: failed to bind\n");
         exit(2);
     }
     freeaddrinfo(ai); 
@@ -81,29 +81,35 @@ void broadcast(Package *package){
     for(i = 0; i <= fdmax; i++) {
         if (FD_ISSET(i, &master_fds) && (i != listener)) {
             if (send_package(i, package) < 0) {
-                fprintf(stderr, "broadcast error\n");
+                fprintf(stderr, "[Server] broadcast error\n");
             }
         }
     }
 }
 
 void handleNewSnake(int newfd){
+    fprintf(stderr, "[Server] Start handle new snake of fd %d\n",newfd);
     serverAddSnake(game, fd_to_user[newfd]);
     Package package;
+    // Send map to the new snake
+    fprintf(stderr, "[Server] Send map to fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
     package.kind = SET_MAP;
-    for (i=0;i<BOARD_ROWS;i++){
-        getStr(game->board, i, 0, package.gi.map);
+    for (i=1;i<BOARD_ROWS-1;i++){
+        getStr(game->board, i, 1, package.gi.map);
         package.gi.y = i;
-        package.gi.x = 0;
+        package.gi.x = 1;
         if (send_package(newfd, &package) < 0) {
-            fprintf(stderr, "send map error\n");
+            fprintf(stderr, "[Server] send map error\n");
+            exit(-1);
         }
     }
+    // Send snakes position to the new snake
+    fprintf(stderr, "[Server] Send snakes position to fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
     package.kind = NEW_SNAKE;
     for (i=0;i<MAX_USER;i++){
-        if (user_to_fd[i]>=0){
+        if (game->snakes[i]!=NULL){
             Coordinate coor = tail(game->snakes[i]);
             package.gi.y = gety(coor);
             package.gi.x = getx(coor);
@@ -112,23 +118,38 @@ void handleNewSnake(int newfd){
             if (user_to_fd[i]==newfd){
                 broadcast(&package);
             } else if (send_package(newfd, &package) < 0){
-                fprintf(stderr, "send snake error\n");
+                fprintf(stderr, "[Server] Send snake to new client error\n");
+                exit(-1);
             }
         }
     }
+    // Send apple position
+    fprintf(stderr, "[Server] Send apple position to fd %d\n",newfd);
+    memset(&package, 0, sizeof(package));
+    package.kind = NEW_APPLE;
+    package.gi.y = getAppleY(game->apple);
+    package.gi.x = getAppleX(game->apple);
+    if (send_package(newfd, &package) < 0){
+        fprintf(stderr, "[Server] send apple error\n");
+        exit(-1);
+    }
+    // Configure snake id
+    fprintf(stderr, "[Server] Configure snake id of fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
     package.kind = SET_ID;
     package.gi.uid = fd_to_user[newfd];
     if (send_package(newfd, &package) < 0){
-        fprintf(stderr, "send send id error\n");
+        fprintf(stderr, "[Server] send send id error\n");
+        exit(-1);
     }
+    fprintf(stderr, "[Server] Successfully deliver info to new snake.\n");
 }
 
 void closeConnection(int sender_fd_num){
     if (nbytes == 0) {
-        fprintf(stderr, "selectserver: socket %d hung up\n", sender_fd_num);
+        fprintf(stderr, "[Server] selectserver: socket %d hung up\n", sender_fd_num);
     } else {
-        fprintf(stderr, "recv error");
+        fprintf(stderr, "[Server] recv error");
     }
     removeSnake(game, fd_to_user[sender_fd_num]);
     Package package;
@@ -146,25 +167,27 @@ void closeConnection(int sender_fd_num){
 void handleConnection(){
     addrlen = sizeof(remoteaddr);
     newfd = accept(listener,(struct sockaddr *)&remoteaddr,&addrlen);
-    if (newfd == -1) fprintf(stderr, "accept error\n");
+    if (newfd == -1) fprintf(stderr, "[Server] accept error\n");
     user_num++;
     if (user_num > MAX_USER) {
         closeConnection(newfd);   
     } else {
         FD_SET(newfd, &master_fds); 
         if (newfd > fdmax) fdmax = newfd; 
-        fprintf(stderr, "selectserver: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET_ADDRSTRLEN), newfd);
         for (i=0;i<MAX_USER;i++){
             if (user_to_fd[i] == -1){
                 user_to_fd[i] = newfd;
                 fd_to_user[newfd] = i;
+                break;
             }
         }
+        fprintf(stderr, "[Server] selectserver: new connection from %s on socket %d fd_to_user %d user_to_fd %d\n", inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET_ADDRSTRLEN), newfd, fd_to_user[newfd], user_to_fd[fd_to_user[newfd]]);
         handleNewSnake(newfd);
     }
 }
 
 void handlePackage(Package package){
+    fprintf(stderr,"[Server] Start handle package type %d\n", package.kind);
     switch(package.kind){
         case NEW_DIR:
             setUserDir(game, package.gi.uid, package.gi.dir);
@@ -191,6 +214,7 @@ void handlePackage(Package package){
         default:
             break;
     }
+    fprintf(stderr,"[Server] Handle package kind %d done\n",package.kind);
 }
 
 void handleData(int sender_fd_num){
@@ -203,10 +227,11 @@ void handleData(int sender_fd_num){
 }
 
 static void *selectLoop(){
+    fprintf(stderr, "[Server] Start select loop\n");
     while (1) {
         read_fds = master_fds;
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) { // block
-            fprintf(stderr, "error: select()\n");
+            fprintf(stderr, "[Server] error: select()\n");
             exit(4);
         }
         for (i = 0; i <= fdmax; i++) {
@@ -216,6 +241,7 @@ static void *selectLoop(){
             }
         }
     } 
+    fprintf(stderr, "[Server] End select loop\n");
     return NULL;
 }
 
@@ -223,7 +249,7 @@ int main(int argc, char **argv)
 {
     // get port number
     if (argc<2){
-        fprintf(stderr, "<Server> need port insert!\n");
+        fprintf(stderr, "[Server] need port insert!\n");
         exit(-1);
     }
     port = argv[1];
