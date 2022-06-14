@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <ncurses.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "time.h"
 
@@ -20,10 +21,12 @@
 #define BOARD_ROWS BOARD_DIM
 #define BOARD_COLS BOARD_DIM * 3
 
-#define SNAKE_MOVE_SPEED 300
+#define SNAKE_MOVE_SPEED 800
 
 #define MAX_USER 6
 #define MAX_FD 100
+
+pthread_mutex_t lock;
 
 /*********** Coordiante *************/
 typedef struct{

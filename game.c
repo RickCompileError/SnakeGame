@@ -1,6 +1,6 @@
 #include "snakeio.h"
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 Game* initGame(Type type){
 	initscr();
@@ -32,6 +32,7 @@ Game* initGame(Type type){
 void processInput(Game *g){
 	chtype input = getInput(g->board);
     if (g->type==SERVER) return;
+    pthread_mutex_lock(&lock);
     switch (input){
         case 'w':
         case KEY_UP:
@@ -56,10 +57,11 @@ void processInput(Game *g){
         default:
             break;
     }
+    pthread_mutex_lock(&lock);
 }
 
 void updateState(Game *g){
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&lock);
     for (int i=0;i<MAX_USER;i++){
         if (g->snakes[i]!=NULL){
             g->snake = g->snakes[i];
@@ -67,11 +69,10 @@ void updateState(Game *g){
         }
     }
     if (g->id!=-1) g->snake = g->snakes[g->id];
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&lock);
 }
 
 void redraw(const Game *g){
-//	if (g->type==CLIENT) 
     refreshBoard(g->board);	
 }
 
@@ -128,14 +129,12 @@ void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, c
     if (!(cury==prevy && curx+1==prevx) && getAtYX(board, cury, curx+1)==ch) nexty = cury, nextx = curx+1; 
     if (!(cury==prevy && curx-1==prevx) && getAtYX(board, cury, curx-1)==ch) nexty = cury, nextx = curx-1; 
     if (nexty==-1 && nextx==-1) return;
-//   addAt(board, initCoordinate(nexty, nextx, ch));
     addPiece(snake, initCoordinate(nexty, nextx, ch));
     dfs(snake, board, cury, curx, nexty, nextx, ch);
 }
 
 void clientAddSnake(Game *g, GameInfo gi){
     g->snakes[gi.uid] = initSnake(gi.dir);
-//    addAt(g->board, initCoordinate(gi.y, gi.x, 48+gi.uid));
     addPiece(g->snakes[gi.uid], initCoordinate(gi.y, gi.x, 48+gi.uid));
     dfs(g->snakes[gi.uid], g->board, -1, -1, gi.y, gi.x, 48+gi.uid);
 }

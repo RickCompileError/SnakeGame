@@ -1,16 +1,23 @@
 #include "snakeio.h"
 
+/******* socket relative *******/
 int sock;
 struct sockaddr_in server;
 
+/******* game relative *******/
 Game *game;
 int id;
 
+/******* message relative *******/
+int nbytes;
+
 void handlePackage(Package package){
     fprintf(stderr,"[Client] Start handle package kind %d\n", package.kind);
+    pthread_mutex_lock(&lock);
     switch(package.kind){
         case SET_ID:
-            game->id = package.gi.uid;
+            id = package.gi.uid;
+            game->id = id;
             game->snake = game->snakes[game->id];
             break;
         case SET_MAP:
@@ -42,23 +49,35 @@ void handlePackage(Package package){
         default:
             break;
     }
+    pthread_mutex_unlock(&lock);
     fprintf(stderr,"[Client] Successfully handle package kind %d\n", package.kind);
+}
+
+void closeConnection(){
+    if (nbytes == 0)
+        fprintf(stderr, "[Client] Receive error\n");
+    else
+        fprintf(stderr, "[Client] Receive error %d\n", errno);
+    close(sock);
+    game->game_over = true;
+    fprintf(stderr, "[Client] Close Connection\n");
 }
 
 static void *handle_data(){
     while (!game->game_over){
         Package package;
         memset(&package,0,sizeof(package));
-        if (recv_package(sock,&package)<0){
-            fprintf(stderr, "[Client] Receive error\n");
-            break;
-        }
-        handlePackage(package);
+        if ((nbytes = recv_package(sock, &package)) <= 0)
+            closeConnection();
+        else
+            handlePackage(package);
     }
+    fprintf(stderr, "[Client] Stop handle data\n");
     return NULL;
 }
 
 void initializeClient(char *serv_addr, int serv_port){
+    fprintf(stderr, "[Client] Start Connecting to server\n");
     sock = socket(AF_INET,SOCK_STREAM,0);
     if(sock==-1) fprintf(stderr, "[Client] Couldn't create socket\n");
     fprintf(stderr, "[Client] Client Socket created\n");
@@ -72,6 +91,7 @@ void initializeClient(char *serv_addr, int serv_port){
     game = initGame(CLIENT);
     game->fd = sock;
     id = -1;
+    fprintf(stderr, "[Client] Client Connect successfully\n");
 }
 
 int main(int argc, char **argv){
@@ -82,8 +102,10 @@ int main(int argc, char **argv){
     char *serv_addr = argv[1];
     int serv_port = atoi(argv[2]);
 
+    // initialize mutex lock
+    pthread_mutex_init(&lock, NULL);
+
     initializeClient(serv_addr, serv_port);
-    fprintf(stderr, "[Client] Client Connect successfully\n");
 
     pthread_t t;
     pthread_create(&t, NULL, handle_data, NULL);

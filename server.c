@@ -88,7 +88,7 @@ void broadcast(Package *package){
 }
 
 void handleNewSnake(int newfd){
-    fprintf(stderr, "[Server] Start handle new snake of fd %d\n",newfd);
+    fprintf(stderr, "[Server] Start handling new snake of fd %d\n",newfd);
     serverAddSnake(game, fd_to_user[newfd]);
     Package package;
     // Send map to the new snake
@@ -101,7 +101,6 @@ void handleNewSnake(int newfd){
         package.gi.x = 1;
         if (send_package(newfd, &package) < 0) {
             fprintf(stderr, "[Server] send map error\n");
-            exit(-1);
         }
     }
     // Send snakes position to the new snake
@@ -119,7 +118,6 @@ void handleNewSnake(int newfd){
                 broadcast(&package);
             } else if (send_package(newfd, &package) < 0){
                 fprintf(stderr, "[Server] Send snake to new client error\n");
-                exit(-1);
             }
         }
     }
@@ -131,7 +129,6 @@ void handleNewSnake(int newfd){
     package.gi.x = getAppleX(game->apple);
     if (send_package(newfd, &package) < 0){
         fprintf(stderr, "[Server] send apple error\n");
-        exit(-1);
     }
     // Configure snake id
     fprintf(stderr, "[Server] Configure snake id of fd %d\n",newfd);
@@ -140,7 +137,6 @@ void handleNewSnake(int newfd){
     package.gi.uid = fd_to_user[newfd];
     if (send_package(newfd, &package) < 0){
         fprintf(stderr, "[Server] send send id error\n");
-        exit(-1);
     }
     fprintf(stderr, "[Server] Successfully deliver info to new snake.\n");
 }
@@ -167,11 +163,13 @@ void closeConnection(int sender_fd_num){
 void handleConnection(){
     addrlen = sizeof(remoteaddr);
     newfd = accept(listener,(struct sockaddr *)&remoteaddr,&addrlen);
-    if (newfd == -1) fprintf(stderr, "[Server] accept error\n");
-    user_num++;
-    if (user_num > MAX_USER) {
-        closeConnection(newfd);   
-    } else {
+    if (newfd == -1){
+        fprintf(stderr, "[Server] accept error\n");
+        return;
+    }
+    if (user_num > MAX_USER) close(newfd);
+    else {
+        user_num++;
         FD_SET(newfd, &master_fds); 
         if (newfd > fdmax) fdmax = newfd; 
         for (i=0;i<MAX_USER;i++){
@@ -187,7 +185,7 @@ void handleConnection(){
 }
 
 void handlePackage(Package package){
-    fprintf(stderr,"[Server] Start handle package type %d\n", package.kind);
+    fprintf(stderr,"[Server] Start handling package type %d\n", package.kind);
     switch(package.kind){
         case NEW_DIR:
             setUserDir(game, package.gi.uid, package.gi.dir);
@@ -214,16 +212,22 @@ void handlePackage(Package package){
         default:
             break;
     }
-    fprintf(stderr,"[Server] Handle package kind %d done\n",package.kind);
+    fprintf(stderr,"[Server] Successfully Handle package kind %d\n",package.kind);
 }
 
-void handleData(int sender_fd_num){
+void handleFD(int fd){
+    fprintf(stderr, "[Server] Start handling fd %d\n", fd);
     Package package;
     memset(&package,0,sizeof(package));
-    if ((nbytes = recv_package(sender_fd_num, &package)) <= 0)
-        closeConnection(sender_fd_num);
+    pthread_mutex_lock(&lock);
+    if (fd == listener)
+        handleConnection();
+    else if ((nbytes  = recv_package(fd, &package)) <= 0)
+        closeConnection(fd);
     else
         handlePackage(package);
+    pthread_mutex_unlock(&lock);
+    fprintf(stderr, "[Server] Successfully handle fd\n");
 }
 
 static void *selectLoop(){
@@ -234,12 +238,8 @@ static void *selectLoop(){
             fprintf(stderr, "[Server] error: select()\n");
             exit(4);
         }
-        for (i = 0; i <= fdmax; i++) {
-            if (FD_ISSET(i, &read_fds)) { 
-                if (i == listener) handleConnection();
-                else handleData(i);
-            }
-        }
+        for (i = 0; i <= fdmax; i++)
+            if (FD_ISSET(i, &read_fds)) handleFD(i);
     } 
     fprintf(stderr, "[Server] End select loop\n");
     return NULL;
@@ -253,6 +253,9 @@ int main(int argc, char **argv)
         exit(-1);
     }
     port = argv[1];
+
+    // initialize mutex lock
+    pthread_mutex_init(&lock, NULL);
 
     initializeServer();
 

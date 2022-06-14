@@ -6,7 +6,7 @@ int recv_package(int fd, Package *package){
     memset(buf,0,sizeof(buf));
     if ((nbytes = recv(fd, buf, BUF_SIZE, 0)) <= 0) return nbytes;
     else {
-        fprintf(stderr, "[Package] Received Data: ");
+        fprintf(stderr, "[Package] Received %d bytes Data: ", nbytes);
         for (int i=0;i<BUF_SIZE;i++) fprintf(stderr,"%d",buf[i]);
         fprintf(stderr,"\n");
         package->kind = buf[0];
@@ -52,6 +52,7 @@ int send_package(int fd, Package *package){
     switch(package->kind){
         case SET_ID:
             buf[1] = package->gi.uid;
+            break;
         case SET_MAP:
             buf[1] = package->gi.y;
             buf[2] = package->gi.x;
