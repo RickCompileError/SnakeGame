@@ -155,8 +155,8 @@ void setUserDir(Game *g, int id, Direction dir){
 }
 
 void startGame(Game *g){
-    while (g->type==CLIENT && g->id==-1) continue;
     fprintf(stderr,"[Game] Start game\n");
+    while (g->type==CLIENT && g->id==-1) continue;
 	while (g->type==SERVER || !isOver(g)){
 		processInput(g);
 		updateState(g);
@@ -165,6 +165,12 @@ void startGame(Game *g){
     fprintf(stderr,"[Game] End game\n");
 	// getch();
 	endwin();
+}
+
+void showGameInfo(Game *g){
+    char fmstr[105];
+    sprintf(fmstr, "apple y: %d, apple x: %d, gameover: %d, type: %d, id: %d, fd: %d\n", gety(*(g->apple)), getx(*(g->apple)), g->game_over, g->type, g->id, g->fd);
+    addGameInfo(g->board, fmstr);
 }
 
 bool isOver(const Game *g){

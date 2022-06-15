@@ -13,6 +13,7 @@ int recv_package(int fd, Package *package){
         switch (package->kind){
             case SET_ID:
                 package->gi.uid = buf[1];
+                fprintf(stderr,"[Package] Received set ID: %d\n", package->gi.uid);
                 break;
             case SET_MAP:
                 package->gi.y = buf[1];
@@ -25,18 +26,22 @@ int recv_package(int fd, Package *package){
                 package->gi.x = buf[2];
                 package->gi.dir = buf[3];
                 package->gi.uid = buf[4];
+                fprintf(stderr,"[Package] Received snake: y:%d, x:%d, dir: %d, uid: %d\n", package->gi.y, package->gi.x, package->gi.dir, package->gi.uid);
                 break;
             case NEW_DIR:
                 package->gi.dir = buf[1];
                 package->gi.uid = buf[2];
+                fprintf(stderr,"[Package] Received new dir: dir: %d, uid: %d\n", package->gi.dir, package->gi.uid);
                 break;
             case NEW_APPLE:
                 package->gi.y = buf[1];
                 package->gi.x = buf[2];
+                fprintf(stderr,"[Package] Received new apple: y: %d, x: %d\n", package->gi.y, package->gi.x);
                 break;
             case EAT_APPLE:
             case USER_DIE:
                 package->gi.uid = buf[1];
+                fprintf(stderr,"[Package] Received eat apple or user die uid: %d\n", package->gi.uid);
                 break;
             default:
                 break;

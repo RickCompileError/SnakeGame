@@ -20,6 +20,11 @@ void addBoardInfo(const Board *b){
 	mvwprintw(b->board_win,0,0,"Height: %d, Width: %d",BOARD_ROWS,BOARD_COLS);
 }
 
+void addGameInfo(const Board *b, char *info){
+    mvwprintw(b->board_win,0,0,info);
+    refreshBoard(b);
+}
+
 void addAt(const Board *b, Coordinate c){
 	mvwaddch(b->board_win, gety(c), getx(c), getchtype(c));	
 }

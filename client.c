@@ -17,8 +17,9 @@ void handlePackage(Package package){
     switch(package.kind){
         case SET_ID:
             id = package.gi.uid;
+            game->snake = game->snakes[id];
             game->id = id;
-            game->snake = game->snakes[game->id];
+            showGameInfo(game);
             break;
         case SET_MAP:
             setStr(game->board, package.gi.y, package.gi.x, package.gi.map);
