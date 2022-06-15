@@ -80,6 +80,7 @@ typedef struct{
 Board* initBoard();
 void addBoard(const Board *b);
 void addBoardInfo(const Board *b);
+void addGameInfo(const Board *b, char *info);
 void addAt(const Board *b, Coordinate c);
 chtype getAt(const Board *b, Coordinate c);
 chtype getAtYX(const Board *b, int y, int x);
@@ -128,6 +129,7 @@ void handleNextMove(Game *g, Coordinate next, bool self);
 void serverAddSnake(Game *g, int id);
 void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, chtype ch);
 void clientAddSnake(Game *g, GameInfo gi);
+void showGameInfo(Game *g);
 void removeSnake(Game *g, int id);
 void setUserDir(Game *g, int id, Direction dir);
 bool isOver(const Game *g);
