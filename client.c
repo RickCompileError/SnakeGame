@@ -7,6 +7,7 @@ struct sockaddr_in server;
 /******* game relative *******/
 Game *game;
 int id;
+bool activate;
 
 /******* message relative *******/
 int nbytes;
@@ -19,7 +20,6 @@ void handlePackage(Package package){
             id = package.gi.uid;
             game->snake = game->snakes[id];
             game->id = id;
-            showGameInfo(game);
             break;
         case SET_MAP:
             setStr(game->board, package.gi.y, package.gi.x, package.gi.map);
@@ -64,6 +64,12 @@ void closeConnection(){
     fprintf(stderr, "[Client] Close Connection\n");
 }
 
+void *activateGame(){
+    activate = true;
+    startGame(game);
+    return NULL;
+}
+
 static void *handle_data(){
     while (!game->game_over){
         Package package;
@@ -92,6 +98,7 @@ void initializeClient(char *serv_addr, int serv_port){
     game = initGame(CLIENT);
     game->fd = sock;
     id = -1;
+    activate = false;
     fprintf(stderr, "[Client] Client Connect successfully\n");
 }
 

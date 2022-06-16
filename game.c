@@ -31,7 +31,7 @@ Game* initGame(Type type){
 
 void processInput(Game *g){
 	chtype input = getInput(g->board);
-    if (g->type==SERVER) return;
+    if (g->type==SERVER || (g->type==CLIENT && g->id==-1)) return;
     pthread_mutex_lock(&lock);
     switch (input){
         case 'w':
@@ -57,7 +57,7 @@ void processInput(Game *g){
         default:
             break;
     }
-    pthread_mutex_lock(&lock);
+    pthread_mutex_unlock(&lock);
 }
 
 void updateState(Game *g){
@@ -86,7 +86,7 @@ void handleNextMove(Game *g, Coordinate next, bool self){
         int empty_col = getx(tail(g->snake));
         addAt(g->board,initCoordinate(empty_row,empty_col,' '));
         removePiece(g->snake);
-    } else if (g->apple!=NULL){
+    } else {
         switch (getAt(g->board, next)){
             case 'A':
                 deleteApple(g);
@@ -155,8 +155,7 @@ void setUserDir(Game *g, int id, Direction dir){
 }
 
 void startGame(Game *g){
-    fprintf(stderr,"[Game] Start game\n");
-    while (g->type==CLIENT && g->id==-1) continue;
+    fprintf(stderr, "Game] Start game\n");
 	while (g->type==SERVER || !isOver(g)){
 		processInput(g);
 		updateState(g);
@@ -169,7 +168,7 @@ void startGame(Game *g){
 
 void showGameInfo(Game *g){
     char fmstr[105];
-    sprintf(fmstr, "apple y: %d, apple x: %d, gameover: %d, type: %d, id: %d, fd: %d\n", gety(*(g->apple)), getx(*(g->apple)), g->game_over, g->type, g->id, g->fd);
+    sprintf(fmstr, "apple y: %d, apple x: %d, gameover: %d, type: %d, id: %d, fd: %d, %d %d %d %d %d %d %d%d%d%d%d%d\n", gety(*(g->apple)), getx(*(g->apple)), g->game_over, g->type, g->id, g->fd, g->snake->snake_piece[0].y, g->snake->snake_piece[0].x, g->snake->snake_piece[1].y, g->snake->snake_piece[1].x, g->snake->snake_piece[2].y, g->snake->snake_piece[2].x, g->snakes[0]==NULL, g->snakes[1]==NULL, g->snakes[2]==NULL, g->snakes[3]==NULL, g->snakes[4]==NULL, g->snakes[5]==NULL);
     addGameInfo(g->board, fmstr);
 }
 

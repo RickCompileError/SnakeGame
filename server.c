@@ -147,14 +147,14 @@ void closeConnection(int sender_fd_num){
     } else {
         fprintf(stderr, "[Server] recv error");
     }
-    removeSnake(game, fd_to_user[sender_fd_num]);
+    /*removeSnake(game, fd_to_user[sender_fd_num]);
     Package package;
     memset(&package, 0, sizeof(package));
     package.kind = USER_DIE;
     package.gi.uid = fd_to_user[sender_fd_num];
     broadcast(&package);
     user_to_fd[fd_to_user[sender_fd_num]] = -1;
-    fd_to_user[sender_fd_num] = -1;
+    fd_to_user[sender_fd_num] = -1;*/
     user_num--;
     close(sender_fd_num); 
     FD_CLR(sender_fd_num, &master_fds); 
