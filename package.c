@@ -6,9 +6,11 @@ int recv_package(int fd, Package *package){
     memset(buf,0,sizeof(buf));
     if ((nbytes = recv(fd, buf, BUF_SIZE, 0)) <= 0) return nbytes;
     else {
+///*
         fprintf(stderr, "[Package] Received %d bytes Data: ", nbytes);
         for (int i=0;i<BUF_SIZE;i++) fprintf(stderr,"%d",buf[i]);
         fprintf(stderr,"\n");
+//*/
         package->type = buf[0];
         switch (package->type){
             case SET_ID:
@@ -42,7 +44,10 @@ int recv_package(int fd, Package *package){
             case EAT_APPLE:
             case USER_DIE:
                 package->gi.uid = buf[1];
-                fprintf(stderr,"[Package] Received eat apple or user die uid: %d\n", package->gi.uid);
+                if (package->type==EAT_APPLE)
+                    fprintf(stderr,"[Package] Received eat apple: %d\n", package->gi.uid);
+                if (package->type==USER_DIE)
+                    fprintf(stderr,"[Package] Received user die: %d\n", package->gi.uid);
                 break;
             default:
                 break;
@@ -58,6 +63,7 @@ int send_package(int fd, Package *package){
     switch(package->type){
         case SET_ID:
             buf[1] = package->gi.uid;
+            fprintf(stderr,"[Package] Send set ID: %d\n", package->gi.uid);
             break;
         case SET_MAP:
             buf[1] = package->gi.y;
@@ -71,23 +77,32 @@ int send_package(int fd, Package *package){
             buf[2] = package->gi.x;
             buf[3] = package->gi.dir;
             buf[4] = package->gi.uid;
+            fprintf(stderr,"[Package] Send snake: y: %d, x: %d, dir: %d, uid: %d\n", package->gi.y, package->gi.x, package->gi.dir, package->gi.uid);
             break;
         case NEW_DIR:
             buf[1] = package->gi.dir;
             buf[2] = package->gi.uid;
+            fprintf(stderr,"[Package] Send new dir: dir: %d, uid: %d\n", package->gi.dir, package->gi.uid);
             break;
         case NEW_APPLE:
             buf[1] = package->gi.y;
             buf[2] = package->gi.x;
+            fprintf(stderr,"[Package] Send new apple: y: %d, x: %d\n", package->gi.y, package->gi.x);
             break;
         case EAT_APPLE:
         case USER_DIE:
             buf[1] = package->gi.uid;
+            if (package->type==EAT_APPLE)
+                fprintf(stderr,"[Package] Send eat apple: %d\n", package->gi.uid);
+            if (package->type==USER_DIE)
+                fprintf(stderr,"[Package] Send user die: %d\n", package->gi.uid);
             break;
     }
+    ///*
     fprintf(stderr, "[Package] Send data: "); 
     for (int i=0;i<BUF_SIZE;i++) fprintf(stderr,"%d",buf[i]);
     fprintf(stderr, "\n");
+    //*/
     return send(fd, buf, BUF_SIZE, 0);
 }
 

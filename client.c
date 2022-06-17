@@ -13,7 +13,7 @@ bool activate;
 int nbytes;
 
 void handlePackage(Package package){
-    fprintf(stderr,"[Client] Start handle package type %d\n", package.type);
+//    fprintf(stderr,"[Client] Start handle package type %d\n", package.type);
     pthread_mutex_lock(&lock);
     switch(package.type){
         case SET_ID:
@@ -35,6 +35,7 @@ void handlePackage(Package package){
             break;
         case EAT_APPLE:
             if (game->id!=package.gi.uid){
+                cleanApple(game);
                 addAt(game->board, nextHead(game->snakes[package.gi.uid]));
                 addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
             }
@@ -54,7 +55,7 @@ void handlePackage(Package package){
             break;
     }
     pthread_mutex_unlock(&lock);
-    fprintf(stderr,"[Client] Successfully handle package type %d\n", package.type);
+//    fprintf(stderr,"[Client] Successfully handle package type %d\n", package.type);
 }
 
 void closeConnection(){

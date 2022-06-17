@@ -193,10 +193,10 @@ void handlePackage(Package package){
             broadcast(&package);
             break;
         case EAT_APPLE:
+            cleanApple(game);
             addAt(game->board, nextHead(game->snakes[package.gi.uid]));
             addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
             broadcast(&package);
-            addAt(game->board, initCoordinate(getAppleY(game->apple), getAppleX(game->apple), ' '));
             deleteApple(game);
             createApple(game);
             memset(&package, 0, sizeof(package));

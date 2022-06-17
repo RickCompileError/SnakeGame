@@ -139,6 +139,7 @@ bool isOver(const Game *g);
 /*********** Apple ************/
 void createApple(Game *g);
 void addApple(Game *g, Coordinate new_apple);
+void cleanApple(Game *g);
 void deleteApple(Game *g);
 void setApple(Coordinate *apple, int y, int x);
 int getAppleY(Coordinate *apple);

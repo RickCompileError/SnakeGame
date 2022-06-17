@@ -89,7 +89,6 @@ void handleNextMove(Game *g, Coordinate next, bool self){
     } else {
         switch (getAt(g->board, next)){
             case 'A':
-                deleteApple(g);
                 sendEatApple(g->fd, g->id);
                 break;
             case ' ':; // C language only allows statements to follow a label
@@ -166,7 +165,8 @@ void setUserDir(Game *g, int id, Direction dir){
 }
 
 void startGame(Game *g){
-    fprintf(stderr, "Game] Start game\n");
+    fprintf(stderr, "[Game] Start game\n");
+//    while (g->type==CLIENT && g->id==-1) continue;
 	while (g->type==SERVER || !isOver(g)){
 		processInput(g);
 		updateState(g);

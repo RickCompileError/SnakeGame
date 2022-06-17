@@ -23,6 +23,10 @@ void addApple(Game *g, Coordinate new_apple){
     }
 }
 
+void cleanApple(Game *g){
+    addAt(g->board, initCoordinate(getAppleY(g->apple), getAppleX(g->apple), ' '));
+}
+
 void deleteApple(Game *g){
     free(g->apple);
     g->apple = NULL;
