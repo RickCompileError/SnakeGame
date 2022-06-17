@@ -133,10 +133,21 @@ void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, c
     dfs(snake, board, cury, curx, nexty, nextx, ch);
 }
 
-void clientAddSnake(Game *g, GameInfo gi){
+void clientAddSnake(Game *g, GameInfo gi, bool isNewSnake){
     g->snakes[gi.uid] = initSnake(gi.dir);
-    addPiece(g->snakes[gi.uid], initCoordinate(gi.y, gi.x, 48+gi.uid));
-    dfs(g->snakes[gi.uid], g->board, -1, -1, gi.y, gi.x, 48+gi.uid);
+    Coordinate pos = initCoordinate(gi.y, gi.x, 48+gi.uid);
+    if (isNewSnake){
+        addAt(g->board, pos);
+        addPiece(g->snakes[gi.uid], pos);
+        addAt(g->board, nextHead(g->snakes[gi.uid]));
+        addPiece(g->snakes[gi.uid], nextHead(g->snakes[gi.uid]));
+        addAt(g->board, nextHead(g->snakes[gi.uid]));
+        addPiece(g->snakes[gi.uid], nextHead(g->snakes[gi.uid]));
+        redraw(g);
+    }else{
+        addPiece(g->snakes[gi.uid], pos);
+        dfs(g->snakes[gi.uid], g->board, -1, -1, gi.y, gi.x, 48+gi.uid);
+    }
 }
 
 void removeSnake(Game *g, int id){

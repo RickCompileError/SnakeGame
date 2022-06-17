@@ -13,9 +13,9 @@ bool activate;
 int nbytes;
 
 void handlePackage(Package package){
-    fprintf(stderr,"[Client] Start handle package kind %d\n", package.kind);
+    fprintf(stderr,"[Client] Start handle package type %d\n", package.type);
     pthread_mutex_lock(&lock);
-    switch(package.kind){
+    switch(package.type){
         case SET_ID:
             id = package.gi.uid;
             game->snake = game->snakes[id];
@@ -24,8 +24,11 @@ void handlePackage(Package package){
         case SET_MAP:
             setStr(game->board, package.gi.y, package.gi.x, package.gi.map);
             break;
+        case SET_SNAKE:
+            clientAddSnake(game, package.gi, false);
+            break;
         case NEW_SNAKE:
-            clientAddSnake(game, package.gi);
+            clientAddSnake(game, package.gi, true);
             break;
         case NEW_DIR:
             setUserDir(game, package.gi.uid, package.gi.dir);
@@ -51,7 +54,7 @@ void handlePackage(Package package){
             break;
     }
     pthread_mutex_unlock(&lock);
-    fprintf(stderr,"[Client] Successfully handle package kind %d\n", package.kind);
+    fprintf(stderr,"[Client] Successfully handle package type %d\n", package.type);
 }
 
 void closeConnection(){

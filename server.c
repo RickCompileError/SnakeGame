@@ -89,12 +89,11 @@ void broadcast(Package *package){
 
 void handleNewSnake(int newfd){
     fprintf(stderr, "[Server] Start handling new snake of fd %d\n",newfd);
-    serverAddSnake(game, fd_to_user[newfd]);
     Package package;
     // Send map to the new snake
     fprintf(stderr, "[Server] Send map to fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
-    package.kind = SET_MAP;
+    package.type = SET_MAP;
     for (i=1;i<BOARD_ROWS-1;i++){
         getStr(game->board, i, 1, package.gi.map);
         package.gi.y = i;
@@ -105,16 +104,18 @@ void handleNewSnake(int newfd){
     }
     // Send snakes position to the new snake
     fprintf(stderr, "[Server] Send snakes position to fd %d\n",newfd);
+    serverAddSnake(game, fd_to_user[newfd]);
     memset(&package, 0, sizeof(package));
-    package.kind = NEW_SNAKE;
     for (i=0;i<MAX_USER;i++){
         if (game->snakes[i]!=NULL){
             Coordinate coor = tail(game->snakes[i]);
+            package.type = SET_SNAKE;
             package.gi.y = gety(coor);
             package.gi.x = getx(coor);
             package.gi.dir = getDirection(game->snakes[i]);
             package.gi.uid = i;
             if (user_to_fd[i]==newfd){
+                package.type = NEW_SNAKE;
                 broadcast(&package);
             } else if (send_package(newfd, &package) < 0){
                 fprintf(stderr, "[Server] Send snake to new client error\n");
@@ -124,7 +125,7 @@ void handleNewSnake(int newfd){
     // Send apple position
     fprintf(stderr, "[Server] Send apple position to fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
-    package.kind = NEW_APPLE;
+    package.type = NEW_APPLE;
     package.gi.y = getAppleY(game->apple);
     package.gi.x = getAppleX(game->apple);
     if (send_package(newfd, &package) < 0){
@@ -133,7 +134,7 @@ void handleNewSnake(int newfd){
     // Configure snake id
     fprintf(stderr, "[Server] Configure snake id of fd %d\n",newfd);
     memset(&package, 0, sizeof(package));
-    package.kind = SET_ID;
+    package.type = SET_ID;
     package.gi.uid = fd_to_user[newfd];
     if (send_package(newfd, &package) < 0){
         fprintf(stderr, "[Server] send send id error\n");
@@ -147,14 +148,14 @@ void closeConnection(int sender_fd_num){
     } else {
         fprintf(stderr, "[Server] recv error");
     }
-    /*removeSnake(game, fd_to_user[sender_fd_num]);
     Package package;
     memset(&package, 0, sizeof(package));
-    package.kind = USER_DIE;
+    package.type = USER_DIE;
     package.gi.uid = fd_to_user[sender_fd_num];
     broadcast(&package);
+    removeSnake(game, fd_to_user[sender_fd_num]);
     user_to_fd[fd_to_user[sender_fd_num]] = -1;
-    fd_to_user[sender_fd_num] = -1;*/
+    fd_to_user[sender_fd_num] = -1;
     user_num--;
     close(sender_fd_num); 
     FD_CLR(sender_fd_num, &master_fds); 
@@ -185,8 +186,8 @@ void handleConnection(){
 }
 
 void handlePackage(Package package){
-    fprintf(stderr,"[Server] Start handling package type %d\n", package.kind);
-    switch(package.kind){
+    fprintf(stderr,"[Server] Start handling package type %d\n", package.type);
+    switch(package.type){
         case NEW_DIR:
             setUserDir(game, package.gi.uid, package.gi.dir);
             broadcast(&package);
@@ -195,24 +196,22 @@ void handlePackage(Package package){
             addAt(game->board, nextHead(game->snakes[package.gi.uid]));
             addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
             broadcast(&package);
+            addAt(game->board, initCoordinate(getAppleY(game->apple), getAppleX(game->apple), ' '));
             deleteApple(game);
             createApple(game);
             memset(&package, 0, sizeof(package));
-            package.kind = NEW_APPLE;
+            package.type = NEW_APPLE;
             package.gi.y = getAppleY(game->apple);
             package.gi.x = getAppleX(game->apple);
             broadcast(&package);
             break;
         case USER_DIE:
-            removeSnake(game, package.gi.uid);
-            fd_to_user[user_to_fd[package.gi.uid]] = -1;
-            user_to_fd[package.gi.uid] = -1;
-            broadcast(&package);
+            closeConnection(user_to_fd[package.gi.uid]);
             break;
         default:
             break;
     }
-    fprintf(stderr,"[Server] Successfully Handle package kind %d\n",package.kind);
+    fprintf(stderr,"[Server] Successfully Handle package type %d\n",package.type);
 }
 
 void handleFD(int fd){

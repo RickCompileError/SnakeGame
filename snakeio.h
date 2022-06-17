@@ -14,10 +14,11 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "time.h"
 
-#define BOARD_DIM 35
+#define BOARD_DIM 20
 #define BOARD_ROWS BOARD_DIM
 #define BOARD_COLS BOARD_DIM * 3
 
@@ -128,7 +129,7 @@ bool isAppleEat(Coordinate current, Coordinate *apple);
 void handleNextMove(Game *g, Coordinate next, bool self);
 void serverAddSnake(Game *g, int id);
 void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, chtype ch);
-void clientAddSnake(Game *g, GameInfo gi);
+void clientAddSnake(Game *g, GameInfo gi, bool isNewSnake);
 void showGameInfo(Game *g);
 void removeSnake(Game *g, int id);
 void setUserDir(Game *g, int id, Direction dir);
@@ -149,6 +150,7 @@ int getAppleX(Coordinate *apple);
 typedef enum {
     SET_ID=1,
     SET_MAP,
+    SET_SNAKE,
     NEW_SNAKE,
     NEW_DIR,
     EAT_APPLE,
@@ -157,7 +159,7 @@ typedef enum {
 } Package_t;
 
 typedef struct {
-    Package_t kind;
+    Package_t type;
     GameInfo gi;
 } Package;
 
