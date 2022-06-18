@@ -40,7 +40,7 @@ void initializeServer(){
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = 0;
+    hints.ai_flags = AI_PASSIVE;
     /* getaddrinfo() converts domain name or IP
      * into a dynamically allocated linked list
      * of struct addrinfo structures.
