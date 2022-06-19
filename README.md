@@ -5,7 +5,7 @@
 git clone https://github.com/RickCompileError/SnakeGame.git
 ```
 
-## dependency
+## Dependency
 ```bash=
 sudo apt install make gcc
 sudo apt-get install libncurses5-dev libncursesw5-dev
@@ -18,7 +18,7 @@ make
 make active_client
 ```
 
-## how to clena relative file
+## How to clean up
 ```bash=
 make clean
 ```
