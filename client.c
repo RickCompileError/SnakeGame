@@ -20,6 +20,11 @@ void handlePackage(Package package){
             id = package.gi.uid;
             game->snake = game->snakes[id];
             game->id = id;
+            // for minimize non-synchronize problems
+            pthread_mutex_unlock(&lock);
+            updateState(game);
+            pthread_mutex_lock(&lock);
+            redraw(game);
             break;
         case SET_MAP:
             setStr(game->board, package.gi.y, package.gi.x, package.gi.map);

@@ -76,16 +76,13 @@ void redraw(const Game *g){
     refreshBoard(g->board);	
 }
 
-bool isAppleEat(Coordinate current, Coordinate *apple){
-    return (apple==NULL) || (gety(current)==gety(*apple) && getx(current)==getx(*apple));
-}
-
 void handleNextMove(Game *g, Coordinate next, bool self){
     if (g->type==SERVER || !self) {
         int empty_row = gety(tail(g->snake));
         int empty_col = getx(tail(g->snake));
         addAt(g->board,initCoordinate(empty_row,empty_col,' '));
-        removePiece(g->snake);
+        if (!g->isAppleEat) removePiece(g->snake);
+        else g->isAppleEat = false;
     } else {
         switch (getAt(g->board, next)){
             case 'A':
@@ -166,7 +163,6 @@ void setUserDir(Game *g, int id, Direction dir){
 
 void startGame(Game *g){
     fprintf(stderr, "[Game] Start game\n");
-//    while (g->type==CLIENT && g->id==-1) continue;
 	while (g->type==SERVER || !isOver(g)){
 		processInput(g);
 		updateState(g);

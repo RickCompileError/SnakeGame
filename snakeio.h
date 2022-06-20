@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ncurses.h>
@@ -118,6 +119,7 @@ typedef struct{
     Type type;
     int id;
     int fd;
+    bool isAppleEat;
 } Game;
 
 Game* initGame(Type type);
@@ -125,7 +127,6 @@ void startGame(Game *g);
 void processInput(Game *g);
 void updateState(Game *g);
 void redraw(const Game *g);
-bool isAppleEat(Coordinate current, Coordinate *apple);
 void handleNextMove(Game *g, Coordinate next, bool self);
 void serverAddSnake(Game *g, int id);
 void dfs(Snake *snake, Board *board, int prevy, int prevx, int cury, int curx, chtype ch);
