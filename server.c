@@ -14,6 +14,7 @@ struct sockaddr_storage remoteaddr;
 socklen_t addrlen;
 char remoteIP[INET6_ADDRSTRLEN];
 int yes=1;
+int pksize=110;
 
 /******* message relative *******/
 char buf[256]; 
@@ -172,6 +173,9 @@ void handleConnection(){
     else {
         user_num++;
         FD_SET(newfd, &master_fds); 
+        int pksize = 110;
+        setsockopt(newfd, SOL_SOCKET, SO_SNDLOWAT, &pksize, sizeof(int));
+        setsockopt(newfd, SOL_TCP, TCP_NODELAY, &yes, sizeof(int));
         if (newfd > fdmax) fdmax = newfd; 
         for (i=0;i<MAX_USER;i++){
             if (user_to_fd[i] == -1){
@@ -194,8 +198,7 @@ void handlePackage(Package package){
             break;
         case EAT_APPLE:
             cleanApple(game);
-            addAt(game->board, nextHead(game->snakes[package.gi.uid]));
-            addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
+            game->isAppleEat = true;
             broadcast(&package);
             deleteApple(game);
             createApple(game);
