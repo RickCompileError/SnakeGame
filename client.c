@@ -41,8 +41,9 @@ void handlePackage(Package package){
         case EAT_APPLE:
             if (game->id!=package.gi.uid){
                 cleanApple(game);
-                addAt(game->board, nextHead(game->snakes[package.gi.uid]));
-                addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
+                game->snakeEat = package.gi.uid;
+                //addAt(game->board, nextHead(game->snakes[package.gi.uid]));
+                //addPiece(game->snakes[package.gi.uid], nextHead(game->snakes[package.gi.uid]));
             }
             break;
         case NEW_APPLE:

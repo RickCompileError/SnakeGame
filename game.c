@@ -19,7 +19,7 @@ Game* initGame(Type type){
     g->snake = NULL;
     for (int i=0;i<MAX_USER;i++) g->snakes[i] = NULL;
     g->type = type;
-    g->id = g->fd = -1;
+    g->id = g->fd = g->snakeEat = -1;
     if (g->type==SERVER) createApple(g);
 
 	srand(time(NULL));
@@ -80,9 +80,11 @@ void handleNextMove(Game *g, Coordinate next, bool self){
     if (g->type==SERVER || !self) {
         int empty_row = gety(tail(g->snake));
         int empty_col = getx(tail(g->snake));
-        addAt(g->board,initCoordinate(empty_row,empty_col,' '));
-        if (!g->isAppleEat) removePiece(g->snake);
-        else g->isAppleEat = false;
+        if (g->snakeEat!=-1 && g->snake==g->snakes[g->snakeEat]) g->snakeEat = -1;
+        else{
+            addAt(g->board,initCoordinate(empty_row,empty_col,' '));
+            removePiece(g->snake);
+        }
     } else {
         switch (getAt(g->board, next)){
             case 'A':

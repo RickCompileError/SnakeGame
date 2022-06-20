@@ -198,7 +198,7 @@ void handlePackage(Package package){
             break;
         case EAT_APPLE:
             cleanApple(game);
-            game->isAppleEat = true;
+            game->snakeEat = package.gi.uid;
             broadcast(&package);
             deleteApple(game);
             createApple(game);

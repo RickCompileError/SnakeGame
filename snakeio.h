@@ -119,7 +119,7 @@ typedef struct{
     Type type;
     int id;
     int fd;
-    bool isAppleEat;
+    int snakeEat;
 } Game;
 
 Game* initGame(Type type);
