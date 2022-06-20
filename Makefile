@@ -20,10 +20,10 @@ client: $(obj) client.o
 	$(CC) -o $@ $^ $(LDFLAGS) $(CFLAGS)
 
 active_server:
-	./server 1111 2> servlog.txt
+	./server 22222 2> servlog.txt
 
 active_client:
-	./client 127.0.0.1 1111 2> clilog.txt
+	./client 127.0.0.1 22222 2> clilog.txt
 
 clean:
 	rm $(obj) $(bin) client.o server.o *.txt
